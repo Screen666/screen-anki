@@ -144,6 +144,22 @@ body::before {
   border-radius: 3px 0 0 3px;
 }
 .deck-card:active { transform: scale(.985); border-color: var(--border2); }
+.deck-del {
+  position: absolute;
+  top: 10px; right: 12px;
+  background: none;
+  border: none;
+  color: var(--muted2);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: color .15s, background .15s;
+  z-index: 2;
+}
+.deck-del:hover { color: var(--red); background: rgba(255,82,82,.1); }
+.deck-del.builtin { display: none; }
 
 .deck-name {
   font-family: 'Unbounded', sans-serif;
@@ -935,12 +951,15 @@ function getIntervalLabel(deckId, cardId) {
 // ═══════════════════════════════════════════════
 function renderHome() {
   const decks = getDecks();
+  const builtinIds = BUILTIN_DECKS.map(d => d.id);
   const list = document.getElementById('deckList');
   list.innerHTML = decks.map((d, i) => {
     const done = getProgress(d.id);
     const pct = Math.round((done / d.cards.length) * 100);
     const due = d.cards.length - done;
+    const isBuiltin = builtinIds.includes(d.id);
     return `<div class="deck-card" style="--deck-color:${d.color}" onclick="openPicker(${i})">
+      ${!isBuiltin ? `<button class="deck-del" onclick="event.stopPropagation();deleteDeck('${d.id}')" title="Удалить">×</button>` : ''}
       <div class="deck-name">${d.name}</div>
       <div class="deck-meta">
         <span>📇 ${d.cards.length}</span>
@@ -949,6 +968,18 @@ function renderHome() {
       <div class="deck-prog"><div class="deck-prog-fill" style="width:${pct}%;background:${d.color}"></div></div>
     </div>`;
   }).join('');
+}
+
+function deleteDeck(id) {
+  if (!confirm('Удалить колоду?')) return;
+  try {
+    const stored = localStorage.getItem('sa_extra_decks');
+    const extra = stored ? JSON.parse(stored) : [];
+    localStorage.setItem('sa_extra_decks', JSON.stringify(extra.filter(d => d.id !== id)));
+    localStorage.removeItem('sa_srs_' + id);
+    localStorage.removeItem('sa_prog_' + id);
+  } catch(e) {}
+  renderHome();
 }
 
 // ═══════════════════════════════════════════════
