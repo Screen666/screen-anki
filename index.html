@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ScreenAnki">
+<meta name="theme-color" content="#0c0c14">
+<title>ScreenAnki</title>
+
+<!-- PWA Icons (inline SVG as data URIs for offline) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230c0c14'/%3E%3Ctext x='90' y='115' font-family='serif' font-size='90' text-anchor='middle' fill='%237c6dff'%3ES%3C/text%3E%3C/svg%3E">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Unbounded:wght@300;400;500;700;900&display=swap');
+
+:root {
+  --bg: #0c0c14;
+  --bg2: #13131f;
+  --bg3: #1a1a2e;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --accent: #7c6dff;
+  --accent2: #ff6b9d;
+  --green: #3dd68c;
+  --amber: #ffb547;
+  --red: #ff5252;
+  --text: #f0eeff;
+  --muted: rgba(240,238,255,0.45);
+  --muted2: rgba(240,238,255,0.2);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── NOISE TEXTURE ─── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 999;
+  opacity: .4;
+}
+
+/* ─── SCREENS ─── */
+.screen { display: none; min-height: 100dvh; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ─── HOME ─── */
+#home { background: var(--bg); }
+
+.home-top {
+  padding: env(safe-area-inset-top, 20px) 20px 0;
+  padding-top: max(env(safe-area-inset-top, 20px), 20px);
+}
+
+.wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  padding: 24px 0 8px;
+}
+.wordmark-screen {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -1px;
+}
+.wordmark-anki {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 26px;
+  font-weight: 300;
+  color: var(--accent);
+  letter-spacing: -1px;
+}
+.tagline {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.section-label {
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.import-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: .5px;
+  transition: opacity .15s, transform .1s;
+}
+.import-btn:active { opacity: .8; transform: scale(.97); }
+
+.deck-list { display: flex; flex-direction: column; gap: 10px; }
+
+.deck-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: border-color .2s, transform .15s;
+  position: relative;
+  overflow: hidden;
+}
+.deck-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 3px;
+  background: var(--deck-color, var(--accent));
+  border-radius: 3px 0 0 3px;
+}
+.deck-card:active { transform: scale(.985); border-color: var(--border2); }
+
+.deck-name {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  padding-left: 10px;
+}
+.deck-meta {
+  display: flex;
+  gap: 14px;
+  font-size: 10px;
+  color: var(--muted);
+  padding-left: 10px;
+  margin-bottom: 10px;
+}
+.deck-prog {
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-left: 10px;
+  overflow: hidden;
+}
+.deck-prog-fill {
+  height: 100%;
+  background: var(--deck-color, var(--accent));
+  border-radius: 2px;
+  transition: width .5s;
+}
+
+/* ─── MODE PICKER ─── */
+#modePicker {
+  background: var(--bg);
+}
+.picker-header {
+  padding: max(env(safe-area-inset-top, 20px), 20px) 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.back-btn {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color .2s;
+  flex-shrink: 0;
+  font-family: 'Space Mono', monospace;
+}
+.back-btn:active { border-color: var(--border2); }
+
+.picker-deck-name {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.picker-body { padding: 24px 20px; flex: 1; }
+.picker-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+
+.mode-list { display: flex; flex-direction: column; gap: 10px; }
+
+.mode-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  transition: border-color .2s, background .2s;
+}
+.mode-card.selected {
+  border-color: var(--accent);
+  background: rgba(124,109,255,0.08);
+}
+.mode-card:active { background: var(--bg3); }
+
+.mode-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.mode-info {}
+.mode-name {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.mode-desc { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+.mode-seq-nums {
+  display: flex;
+  gap: 3px;
+  margin-top: 8px;
+}
+.mode-seq-nums span {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--muted);
+}
+.mode-seq-nums.rnd span { opacity: .6; }
+.mode-seq-nums.rnd span:nth-child(1) { order: 3; }
+.mode-seq-nums.rnd span:nth-child(2) { order: 1; }
+.mode-seq-nums.rnd span:nth-child(3) { order: 5; }
+.mode-seq-nums.rnd span:nth-child(4) { order: 2; }
+.mode-seq-nums.rnd span:nth-child(5) { order: 4; }
+
+.start-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  border-radius: 14px;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .5px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: opacity .15s, transform .1s;
+}
+.start-btn:active { opacity: .85; transform: scale(.98); }
+
+/* ─── STUDY ─── */
+#study { background: var(--bg); position: relative; }
+
+.study-header {
+  padding: max(env(safe-area-inset-top, 20px), 20px) 20px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.study-deck { font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.study-mode-badge {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.badge-seq { background: rgba(59,139,212,0.15); color: #6ab0f5; }
+.badge-rnd { background: rgba(255,181,71,0.15); color: var(--amber); }
+.badge-srs { background: rgba(124,109,255,0.15); color: #a89eff; }
+
+.study-counter { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+
+.prog-track { height: 1px; background: var(--border); }
+.prog-fill { height: 100%; background: var(--accent); transition: width .4s cubic-bezier(.4,0,.2,1); }
+
+/* ─── CARD ─── */
+.card-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.card-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 4px 11px;
+  border-radius: 20px;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  align-self: flex-start;
+}
+
+.card-q {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.45;
+  margin-bottom: 16px;
+  flex: none;
+}
+
+.card-hint {
+  font-size: 11px;
+  color: var(--muted);
+  border-left: 2px solid var(--accent);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  background: rgba(124,109,255,0.06);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.srs-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--muted2);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-top: 8px;
+}
+
+.answer-reveal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 18px;
+  margin-top: 20px;
+  animation: slideUp .25s cubic-bezier(.4,0,.2,1);
+}
+@keyframes slideUp { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+.answer-label {
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.answer-text { font-size: 13px; line-height: 1.75; color: var(--text); }
+
+.spacer { flex: 1; min-height: 16px; }
+
+/* ─── BUTTONS ─── */
+.reveal-btn {
+  width: 100%;
+  padding: 17px;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  border-radius: 14px;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .5px;
+  cursor: pointer;
+  transition: opacity .15s, transform .1s;
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+.reveal-btn:active { opacity: .85; transform: scale(.98); }
+
+.rating-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+.rate-btn {
+  padding: 14px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, transform .1s;
+  line-height: 1.3;
+  text-align: center;
+}
+.rate-btn small { display: block; font-size: 9px; color: var(--muted); font-weight: 400; margin-top: 3px; }
+.rate-btn:active { transform: scale(.96); }
+.rate-btn.again { border-color: rgba(255,82,82,.4); }
+.rate-btn.again:active { background: rgba(255,82,82,.1); }
+.rate-btn.hard { border-color: rgba(255,181,71,.4); }
+.rate-btn.hard:active { background: rgba(255,181,71,.1); }
+.rate-btn.good { border-color: rgba(124,109,255,.5); }
+.rate-btn.good:active { background: rgba(124,109,255,.1); }
+.rate-btn.easy { border-color: rgba(61,214,140,.4); }
+.rate-btn.easy:active { background: rgba(61,214,140,.1); }
+
+/* ─── DONE ─── */
+#done {
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+  background: var(--bg);
+}
+.done-glyph {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 64px;
+  font-weight: 900;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 24px;
+  letter-spacing: -4px;
+}
+.done-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.done-sub { font-size: 11px; color: var(--muted); margin-bottom: 32px; line-height: 1.7; }
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 32px;
+}
+.stat-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 8px;
+}
+.stat-n {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-l { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+.done-home-btn {
+  width: 100%;
+  max-width: 320px;
+  padding: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 14px;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.done-home-btn:active { border-color: var(--accent); }
+
+/* ─── IMPORT SHEET ─── */
+.sheet-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 100;
+  align-items: flex-end;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.sheet-overlay.open { display: flex; }
+.sheet {
+  background: var(--bg2);
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid var(--border2);
+  padding: 20px 20px calc(env(safe-area-inset-bottom, 16px) + 16px);
+  width: 100%;
+}
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+.sheet-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.sheet-sub { font-size: 11px; color: var(--muted); line-height: 1.7; margin-bottom: 20px; }
+.fmt-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.fmt-tag {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 4px 11px;
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--accent);
+}
+.file-zone {
+  border: 1px dashed var(--border2);
+  border-radius: 12px;
+  padding: 28px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s;
+  margin-bottom: 12px;
+}
+.file-zone:hover { border-color: var(--accent); }
+.file-zone input { display: none; }
+.file-zone-icon { font-size: 28px; margin-bottom: 8px; }
+.file-zone-text { font-size: 12px; color: var(--muted); line-height: 1.6; }
+#fileStatus { font-size: 12px; color: var(--green); text-align: center; min-height: 18px; margin-bottom: 16px; }
+.sheet-actions { display: flex; gap: 10px; }
+.cancel-btn {
+  flex: 1;
+  padding: 15px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  cursor: pointer;
+}
+.confirm-btn {
+  flex: 2;
+  padding: 15px;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  border-radius: 12px;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ─── INSTALL BANNER ─── */
+.install-banner {
+  background: linear-gradient(135deg, rgba(124,109,255,.15), rgba(255,107,157,.1));
+  border: 1px solid rgba(124,109,255,.3);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.install-banner-text { flex: 1; }
+.install-banner-title { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+.install-banner-sub { font-size: 10px; color: var(--muted); }
+.install-banner-icon { font-size: 24px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ HOME ═══════════════════ -->
+<div class="screen active" id="home">
+  <div style="padding: 0 20px; flex: 1; overflow-y: auto; padding-bottom: 24px;">
+    <div class="home-top">
+      <div class="wordmark">
+        <span class="wordmark-screen">Screen</span>
+        <span class="wordmark-anki">Anki</span>
+      </div>
+      <div class="tagline">Algo Edition · Офлайн PWA</div>
+
+      <div class="section-head">
+        <span class="section-label">Колоды</span>
+        <button class="import-btn" onclick="openImport()">+ Импорт</button>
+      </div>
+    </div>
+
+    <div class="deck-list" id="deckList"></div>
+
+    <div class="install-banner" id="installBanner" style="display:none" onclick="installPWA()">
+      <div class="install-banner-icon">📲</div>
+      <div class="install-banner-text">
+        <div class="install-banner-title">Установить на iPhone</div>
+        <div class="install-banner-sub">Safari → Поделиться → На экран Домой</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODE PICKER ═══════════════════ -->
+<div class="screen" id="modePicker">
+  <div class="picker-header">
+    <button class="back-btn" onclick="show('home')">←</button>
+    <div class="picker-deck-name" id="pickerName">Колода</div>
+  </div>
+  <div class="picker-body">
+    <div class="picker-title">Режим очерёдности</div>
+    <div class="mode-list">
+
+      <div class="mode-card selected" id="m-seq" onclick="selectMode('seq')">
+        <div class="mode-icon" style="background:rgba(59,139,212,.15)">🔢</div>
+        <div class="mode-info">
+          <div class="mode-name">По порядку</div>
+          <div class="mode-desc">Карточки идут строго по очерёдности создания</div>
+          <div class="mode-seq-nums">
+            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card" id="m-rnd" onclick="selectMode('rnd')">
+        <div class="mode-icon" style="background:rgba(255,181,71,.15)">🔀</div>
+        <div class="mode-info">
+          <div class="mode-name">Случайный</div>
+          <div class="mode-desc">Колода перемешивается при каждом запуске</div>
+          <div class="mode-seq-nums rnd">
+            <span>2</span><span>5</span><span>1</span><span>4</span><span>3</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card" id="m-srs" onclick="selectMode('srs')">
+        <div class="mode-icon" style="background:rgba(124,109,255,.15)">🧠</div>
+        <div class="mode-info">
+          <div class="mode-name">Обучающий алгоритм (SRS)</div>
+          <div class="mode-desc">Как в Anki — сложные карточки возвращаются чаще, лёгкие откладываются</div>
+        </div>
+      </div>
+
+    </div>
+    <button class="start-btn" onclick="startStudy()">Начать →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ STUDY ═══════════════════ -->
+<div class="screen" id="study">
+  <div class="study-header">
+    <button class="back-btn" onclick="show('home'); renderHome()">←</button>
+    <div class="study-deck" id="studyDeckName"></div>
+    <div class="study-mode-badge badge-seq" id="modeBadge">seq</div>
+    <div class="study-counter" id="studyCounter">1/10</div>
+  </div>
+  <div class="prog-track">
+    <div class="prog-fill" id="studyProg" style="width:0%"></div>
+  </div>
+  <div class="card-stage" id="cardStage"></div>
+</div>
+
+<!-- ═══════════════════ DONE ═══════════════════ -->
+<div class="screen" id="done">
+  <div class="done-glyph">✦</div>
+  <div class="done-title">Сессия завершена</div>
+  <div class="done-sub" id="doneMsg">Отлично! Возвращайся завтра для повторения.</div>
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-n" id="st-again" style="color:var(--red)">0</div>
+      <div class="stat-l">Снова</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-n" id="st-hard" style="color:var(--amber)">0</div>
+      <div class="stat-l">Сложно</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-n" id="st-good" style="color:var(--accent)">0</div>
+      <div class="stat-l">Хорошо</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-n" id="st-easy" style="color:var(--green)">0</div>
+      <div class="stat-l">Легко</div>
+    </div>
+  </div>
+  <button class="done-home-btn" onclick="show('home'); renderHome()">← На главную</button>
+</div>
+
+<!-- ═══════════════════ IMPORT SHEET ═══════════════════ -->
+<div class="sheet-overlay" id="importOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Импорт колоды</div>
+    <div class="sheet-sub">
+      Экспортируй колоду из AlgoAnki: <strong>Файл → Экспортировать → Текст</strong>.
+      Формат: каждая строка = вопрос [tab или ;] ответ.
+    </div>
+    <div class="fmt-tags">
+      <span class="fmt-tag">.csv</span>
+      <span class="fmt-tag">.txt</span>
+      <span class="fmt-tag">.tsv</span>
+    </div>
+    <div class="file-zone" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept=".csv,.txt,.tsv" onchange="handleFile(event)">
+      <div class="file-zone-icon">📂</div>
+      <div class="file-zone-text">Нажми чтобы выбрать файл<br><span style="font-size:10px;opacity:.5">.csv / .txt / .tsv</span></div>
+    </div>
+    <div id="fileStatus"></div>
+    <div class="sheet-actions">
+      <button class="cancel-btn" onclick="closeImport()">Отмена</button>
+      <button class="confirm-btn" onclick="confirmImport()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  DATA — встроенные AlgoAnki колоды
+// ═══════════════════════════════════════════════
+const BUILTIN_DECKS = [
+  {
+    id: 'sort', name: 'Сортировки', color: '#7c6dff',
+    cards: [
+      { id:1, q:'Временная сложность Quicksort в среднем?', hint:'Divide & Conquer', type:'Сложность',
+        a:'O(n log n) — массив делится пополам на каждом уровне рекурсии. В худшем (уже отсортированный) — O(n²).' },
+      { id:2, q:'Чем Merge Sort лучше Quick Sort для связных списков?', hint:'Memory access pattern', type:'Сравнение',
+        a:'Merge Sort не требует random access — идеально для LinkedList. QuickSort требует индексации по позиции.' },
+      { id:3, q:'Когда использовать Counting Sort?', hint:'Non-comparison sort', type:'Алгоритм',
+        a:'Когда диапазон значений k небольшой. Работает за O(n+k). Пример: сортировка оценок (1–100), ASCII-символов.' },
+      { id:4, q:'Что такое инвариант цикла в Insertion Sort?', hint:'Loop invariant', type:'Теория',
+        a:'После i-й итерации первые i элементов массива отсортированы. Это гарантирует корректность алгоритма.' },
+      { id:5, q:'Heap Sort — стабильный алгоритм?', hint:'Relative order', type:'Свойство',
+        a:'Нестабильный. Операции heapify могут нарушить относительный порядок равных элементов.' },
+      { id:6, q:'В чём разница между stable и unstable sort?', hint:'Equal elements', type:'Теория',
+        a:'Стабильная сортировка сохраняет исходный порядок равных элементов. Merge Sort — стабильная, Quick/Heap — обычно нет.' },
+      { id:7, q:'Что такое Timsort и где он используется?', hint:'Python, Java', type:'Алгоритм',
+        a:'Гибрид Merge Sort и Insertion Sort. Используется в Python (sort/sorted) и Java (Arrays.sort). O(n log n) worst case.' },
+    ]
+  },
+  {
+    id: 'graph', name: 'Графы', color: '#ff6b9d',
+    cards: [
+      { id:1, q:'BFS vs DFS: разница в использовании памяти?', hint:'Queue vs Stack', type:'Сравнение',
+        a:'BFS хранит весь "фронт" — O(width). DFS хранит путь — O(depth). На широких графах DFS экономнее.' },
+      { id:2, q:'Когда алгоритм Дейкстры не работает?', hint:'Edge weights', type:'Edge case',
+        a:'При отрицательных рёбрах. Используй алгоритм Беллмана-Форда O(VE) или SPFA.' },
+      { id:3, q:'Что такое топологическая сортировка?', hint:'DAG only', type:'Алгоритм',
+        a:'Линейный порядок вершин DAG где для u→v, u стоит раньше v. Используется в build systems, dependency resolution.' },
+      { id:4, q:'Чем DFS полезен для поиска циклов?', hint:'Back edge', type:'Применение',
+        a:'В процессе DFS "back edge" (ребро к уже посещённой серой вершине) указывает на цикл в ориентированном графе.' },
+      { id:5, q:'Алгоритм Флойда-Уоршелла — зачем и когда?', hint:'All-pairs shortest path', type:'Алгоритм',
+        a:'Нахождение кратчайших путей между всеми парами вершин за O(V³). Работает с отрицательными рёбрами (но не с отрицательными циклами).' },
+    ]
+  },
+  {
+    id: 'dp', name: 'Динамическое программирование', color: '#3dd68c',
+    cards: [
+      { id:1, q:'Что такое оптимальная подструктура?', hint:'DP foundation', type:'Теория',
+        a:'Задача имеет оптимальную подструктуру если оптимальное решение задачи содержит оптимальные решения подзадач.' },
+      { id:2, q:'Top-down vs Bottom-up DP: когда что выбирать?', hint:'Memoization vs Tabulation', type:'Сравнение',
+        a:'Top-down (мемоизация) — проще, считает только нужное. Bottom-up — без overhead рекурсии, лучше cache locality, иногда возможна оптимизация памяти.' },
+      { id:3, q:'Как распознать задачу на DP?', hint:'Overlapping subproblems', type:'Теория',
+        a:'Признаки: "минимум/максимум/количество способов", решение зависит от предыдущих подзадач, перекрывающиеся подзадачи (без DP одни и те же вычисляются многократно).' },
+      { id:4, q:'Что такое Interval DP?', hint:'2D table, dp[i][j]', type:'Техника',
+        a:'dp[i][j] = оптимальный ответ для подмассива [i..j]. Перебирай длины от малых к большим. Примеры: Matrix Chain Multiplication, Burst Balloons.' },
+      { id:5, q:'LCS — что это и как решать?', hint:'Longest Common Subsequence', type:'Классика',
+        a:'Наидлиннейшая общая подпоследовательность. dp[i][j] = LCS для s1[0..i] и s2[0..j]. O(nm) время и память.' },
+    ]
+  },
+  {
+    id: 'trees', name: 'Деревья', color: '#ffb547',
+    cards: [
+      { id:1, q:'Что такое AVL дерево?', hint:'Self-balancing BST', type:'Структура',
+        a:'Самобалансирующееся BST: высоты левого и правого поддеревьев отличаются ≤1. Гарантирует O(log n) для поиска, вставки, удаления.' },
+      { id:2, q:'Как обходить бинарное дерево без рекурсии?', hint:'Explicit stack', type:'Алгоритм',
+        a:'Используй явный стек. Для inorder: иди влево добавляя в стек, при null — pop, обработай узел, иди вправо. Аналогично для pre/postorder.' },
+      { id:3, q:'В чём разница между B-tree и BST?', hint:'Disk I/O', type:'Сравнение',
+        a:'B-tree — многоуровневое дерево с большим ветвлением (сотни детей на узел). Оптимизировано для дисковых операций. Используется в БД и файловых системах.' },
+      { id:4, q:'Что такое Trie и когда его применять?', hint:'Prefix tree', type:'Структура',
+        a:'Prefix tree для строк. O(m) поиск по длине слова. Применение: автодополнение, проверка орфографии, IP маршрутизация.' },
+    ]
+  },
+  {
+    id: 'search', name: 'Поиск', color: '#60c6ff',
+    cards: [
+      { id:1, q:'Временная сложность двоичного поиска?', hint:'Sorted array required', type:'Сложность',
+        a:'O(log n) время, O(1) память. Требует отсортированного массива. На каждом шаге пространство поиска делится пополам.' },
+      { id:2, q:'Что такое поиск по ответу (binary search on answer)?', hint:'Монотонная функция', type:'Техника',
+        a:'Бинарный поиск по возможным значениям ответа, а не по индексам. Применимо когда "возможно ли достичь X?" является монотонной функцией.' },
+      { id:3, q:'Как найти медиану двух отсортированных массивов за O(log n)?', hint:'Binary search on partition', type:'Сложная задача',
+        a:'Бинарный поиск по разделу меньшего массива. На каждом шаге проверяем правильность раздела — левая часть ≤ правая. LeetCode #4.' },
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+function getDecks() {
+  try {
+    const stored = localStorage.getItem('sa_extra_decks');
+    const extra = stored ? JSON.parse(stored) : [];
+    return [...BUILTIN_DECKS, ...extra];
+  } catch(e) { return BUILTIN_DECKS; }
+}
+function saveExtraDeck(deck) {
+  try {
+    const stored = localStorage.getItem('sa_extra_decks');
+    const extra = stored ? JSON.parse(stored) : [];
+    extra.push(deck);
+    localStorage.setItem('sa_extra_decks', JSON.stringify(extra));
+  } catch(e) {}
+}
+function getSRS(deckId) {
+  try { return JSON.parse(localStorage.getItem('sa_srs_' + deckId) || '{}'); } catch(e) { return {}; }
+}
+function saveSRS(deckId, data) {
+  try { localStorage.setItem('sa_srs_' + deckId, JSON.stringify(data)); } catch(e) {}
+}
+function getProgress(deckId) {
+  try { return JSON.parse(localStorage.getItem('sa_prog_' + deckId) || '{"done":0}').done; } catch(e) { return 0; }
+}
+function saveProgress(deckId, done) {
+  try { localStorage.setItem('sa_prog_' + deckId, JSON.stringify({done})); } catch(e) {}
+}
+
+let ST = {
+  deck: null,
+  mode: 'seq',
+  queue: [],
+  idx: 0,
+  session: { again:0, hard:0, good:0, easy:0 }
+};
+
+let selectedDeckIdx = 0;
+let selectedMode = 'seq';
+let pendingImport = null;
+
+// ═══════════════════════════════════════════════
+//  QUEUE BUILDERS
+// ═══════════════════════════════════════════════
+function buildQueue(deck, mode) {
+  let cards = [...deck.cards];
+  if (mode === 'seq') return cards;
+  if (mode === 'rnd') return shuffle(cards);
+  if (mode === 'srs') {
+    const srs = getSRS(deck.id);
+    const now = Date.now();
+    return [...cards].sort((a, b) => {
+      const da = srs[a.id]?.due || 0;
+      const db = srs[b.id]?.due || 0;
+      const overA = da < now ? now - da : -(da - now);
+      const overB = db < now ? now - db : -(db - now);
+      return overB - overA;
+    });
+  }
+  return cards;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function updateSRS(deckId, cardId, rating) {
+  const srs = getSRS(deckId);
+  if (!srs[cardId]) srs[cardId] = { interval: 0, ease: 2.5, due: Date.now() };
+  const c = srs[cardId];
+  if (rating === 'again')      { c.interval = 0.007; c.ease = Math.max(1.3, c.ease - 0.2); }
+  else if (rating === 'hard')  { c.interval = Math.max(0.04, c.interval * 1.2); c.ease = Math.max(1.3, c.ease - 0.15); }
+  else if (rating === 'good')  { c.interval = Math.max(1, (c.interval || 1) * c.ease); }
+  else if (rating === 'easy')  { c.interval = Math.max(4, (c.interval || 4) * c.ease * 1.3); c.ease += 0.15; }
+  c.due = Date.now() + c.interval * 86400000;
+  saveSRS(deckId, srs);
+}
+
+function getIntervalLabel(deckId, cardId) {
+  const srs = getSRS(deckId);
+  const c = srs[cardId];
+  if (!c || c.interval < 0.02) return 'новая';
+  if (c.interval < 0.05) return '< 1 ч';
+  if (c.interval < 1) return Math.round(c.interval * 24) + ' ч';
+  return Math.round(c.interval) + ' дн';
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER HOME
+// ═══════════════════════════════════════════════
+function renderHome() {
+  const decks = getDecks();
+  const list = document.getElementById('deckList');
+  list.innerHTML = decks.map((d, i) => {
+    const done = getProgress(d.id);
+    const pct = Math.round((done / d.cards.length) * 100);
+    const due = d.cards.length - done;
+    return `<div class="deck-card" style="--deck-color:${d.color}" onclick="openPicker(${i})">
+      <div class="deck-name">${d.name}</div>
+      <div class="deck-meta">
+        <span>📇 ${d.cards.length}</span>
+        <span style="color:${due > 0 ? d.color : 'var(--green)'}">${due > 0 ? '⏳ ' + due + ' на повтор' : '✓ готово'}</span>
+      </div>
+      <div class="deck-prog"><div class="deck-prog-fill" style="width:${pct}%;background:${d.color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  MODE PICKER
+// ═══════════════════════════════════════════════
+function openPicker(i) {
+  selectedDeckIdx = i;
+  selectedMode = 'seq';
+  const decks = getDecks();
+  document.getElementById('pickerName').textContent = decks[i].name;
+  ['seq','rnd','srs'].forEach(m => {
+    document.getElementById('m-' + m).classList.toggle('selected', m === 'seq');
+  });
+  show('modePicker');
+}
+
+function selectMode(m) {
+  selectedMode = m;
+  ['seq','rnd','srs'].forEach(x => {
+    document.getElementById('m-' + x).classList.toggle('selected', x === m);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  STUDY
+// ═══════════════════════════════════════════════
+function startStudy() {
+  const decks = getDecks();
+  ST.deck = decks[selectedDeckIdx];
+  ST.mode = selectedMode;
+  ST.queue = buildQueue(ST.deck, selectedMode);
+  ST.idx = 0;
+  ST.session = { again:0, hard:0, good:0, easy:0 };
+
+  const labels = { seq:'порядок', rnd:'рандом', srs:'SRS' };
+  const cls    = { seq:'badge-seq', rnd:'badge-rnd', srs:'badge-srs' };
+  const mb = document.getElementById('modeBadge');
+  mb.textContent = labels[selectedMode];
+  mb.className = 'study-mode-badge ' + cls[selectedMode];
+  document.getElementById('studyDeckName').textContent = ST.deck.name;
+
+  show('study');
+  renderCard();
+}
+
+function renderCard() {
+  if (ST.idx >= ST.queue.length) { endSession(); return; }
+  const card  = ST.queue[ST.idx];
+  const total = ST.queue.length;
+  const pct   = Math.round((ST.idx / total) * 100);
+
+  document.getElementById('studyCounter').textContent = `${ST.idx + 1}/${total}`;
+  document.getElementById('studyProg').style.width = pct + '%';
+
+  let extra = '';
+  if (ST.mode === 'srs') {
+    const lbl = getIntervalLabel(ST.deck.id, card.id);
+    extra = `<div class="srs-tag">🧠 интервал: ${lbl}</div>`;
+  }
+  if (ST.mode === 'seq') {
+    extra = `<div class="srs-tag">#${card.id} из ${ST.deck.cards.length}</div>`;
+  }
+
+  document.getElementById('cardStage').innerHTML = `
+    <div class="card-type">${card.type || 'Алгоритм'}</div>
+    <div class="card-q">${card.q}</div>
+    ${card.hint ? `<div class="card-hint">💡 ${card.hint}</div>` : ''}
+    ${extra}
+    <div id="answerArea"></div>
+    <div class="spacer"></div>
+    <div id="actionArea">
+      <button class="reveal-btn" onclick="revealAnswer()">Показать ответ</button>
+    </div>
+  `;
+}
+
+function revealAnswer() {
+  const card = ST.queue[ST.idx];
+
+  document.getElementById('answerArea').innerHTML = `
+    <div class="answer-reveal">
+      <div class="answer-label">Ответ</div>
+      <div class="answer-text">${card.a}</div>
+    </div>
+  `;
+
+  const isSRS = ST.mode === 'srs';
+  document.getElementById('actionArea').innerHTML = `
+    <div class="rating-grid">
+      <button class="rate-btn again" onclick="rate('again')">Снова<small>${isSRS ? '&lt; 1 мин' : 'повторить'}</small></button>
+      <button class="rate-btn hard" onclick="rate('hard')">Сложно<small>${isSRS ? '~6 мин' : 'запомнил слабо'}</small></button>
+      <button class="rate-btn good" onclick="rate('good')">Хорошо<small>${isSRS ? '1 день' : 'запомнил'}</small></button>
+      <button class="rate-btn easy" onclick="rate('easy')">Легко<small>${isSRS ? '4 дня' : 'знал сразу'}</small></button>
+    </div>
+  `;
+}
+
+function rate(r) {
+  ST.session[r] = (ST.session[r] || 0) + 1;
+  if (ST.mode === 'srs') updateSRS(ST.deck.id, ST.queue[ST.idx].id, r);
+  if (r === 'again' && ST.mode !== 'seq') {
+    const missed = { ...ST.queue[ST.idx] };
+    const insertAt = Math.min(ST.idx + 3, ST.queue.length);
+    ST.queue.splice(insertAt, 0, missed);
+  }
+  ST.idx++;
+  saveProgress(ST.deck.id, Math.min(ST.idx, ST.deck.cards.length));
+  renderCard();
+}
+
+// ═══════════════════════════════════════════════
+//  DONE
+// ═══════════════════════════════════════════════
+function endSession() {
+  const s = ST.session;
+  document.getElementById('st-again').textContent = s.again || 0;
+  document.getElementById('st-hard').textContent  = s.hard  || 0;
+  document.getElementById('st-good').textContent  = s.good  || 0;
+  document.getElementById('st-easy').textContent  = s.easy  || 0;
+  const total = Object.values(s).reduce((a,b) => a+b, 0);
+  const modeLabel = { seq:'по порядку', rnd:'случайный', srs:'SRS' }[ST.mode];
+  document.getElementById('doneMsg').textContent =
+    `${total} карточек · режим «${modeLabel}»`;
+  show('done');
+}
+
+// ═══════════════════════════════════════════════
+//  IMPORT
+// ═══════════════════════════════════════════════
+function openImport() { document.getElementById('importOverlay').classList.add('open'); }
+function closeImport() {
+  document.getElementById('importOverlay').classList.remove('open');
+  document.getElementById('fileStatus').textContent = '';
+  document.getElementById('fileStatus').style.color = 'var(--green)';
+  pendingImport = null;
+}
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const cards = parseAnki(ev.target.result);
+    if (cards.length) {
+      pendingImport = {
+        id: 'import_' + Date.now(),
+        name: file.name.replace(/\.[^.]+$/, ''),
+        color: '#a78bfa',
+        cards
+      };
+      document.getElementById('fileStatus').style.color = 'var(--green)';
+      document.getElementById('fileStatus').textContent = `✓ Найдено ${cards.length} карточек`;
+    } else {
+      document.getElementById('fileStatus').style.color = 'var(--red)';
+      document.getElementById('fileStatus').textContent = '⚠ Карточки не найдены. Проверь формат (вопрос TAB ответ).';
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function parseAnki(text) {
+  return text.split('\n')
+    .filter(l => l.trim() && !l.startsWith('#'))
+    .map((l, i) => {
+      const parts = l.split(/\t|;/);
+      if (parts.length >= 2) {
+        return { id: i + 1, q: parts[0].trim(), a: parts[1].trim(), type: 'Imported', hint: '' };
+      }
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function confirmImport() {
+  if (!pendingImport) {
+    document.getElementById('fileStatus').style.color = 'var(--red)';
+    document.getElementById('fileStatus').textContent = 'Сначала выбери файл';
+    return;
+  }
+  saveExtraDeck(pendingImport);
+  closeImport();
+  renderHome();
+}
+
+// ═══════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ═══════════════════════════════════════════════
+//  PWA INSTALL
+// ═══════════════════════════════════════════════
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('installBanner').style.display = 'none';
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  SERVICE WORKER (встроенный, офлайн поддержка)
+// ═══════════════════════════════════════════════
+const SW_CODE = `
+const CACHE = 'screen-anki-v1';
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(['/']))
+  );
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys =>
+    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+  ));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/')))
+  );
+});
+`;
+
+if ('serviceWorker' in navigator) {
+  const blob = new Blob([SW_CODE], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl, { scope: '/' })
+    .catch(() => {});
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+renderHome();
+</script>
+</body>
+</html>
