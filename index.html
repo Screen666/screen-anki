@@ -740,9 +740,11 @@ body::before {
       <span class="fmt-tag">.csv</span>
       <span class="fmt-tag">.txt</span>
       <span class="fmt-tag">.tsv</span>
+      <span class="fmt-tag">.zip</span>
+      <span class="fmt-tag">.colpkg</span>
     </div>
     <div class="file-zone" onclick="document.getElementById('fileInput').click()">
-      <input type="file" id="fileInput" accept=".csv,.txt,.tsv" onchange="handleFile(event)">
+      <input type="file" id="fileInput" accept=".csv,.txt,.tsv,.zip,.colpkg,.apkg" onchange="handleFile(event)">
       <div class="file-zone-icon">📂</div>
       <div class="file-zone-text">Нажми чтобы выбрать файл<br><span style="font-size:10px;opacity:.5">.csv / .txt / .tsv</span></div>
     </div>
@@ -1087,33 +1089,117 @@ function closeImport() {
 function handleFile(e) {
   const file = e.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const cards = parseAnki(ev.target.result);
-    if (cards.length) {
-      pendingImport = {
-        id: 'import_' + Date.now(),
-        name: file.name.replace(/\.[^.]+$/, ''),
-        color: '#a78bfa',
-        cards
-      };
-      document.getElementById('fileStatus').style.color = 'var(--green)';
-      document.getElementById('fileStatus').textContent = `✓ Найдено ${cards.length} карточек`;
-    } else {
-      document.getElementById('fileStatus').style.color = 'var(--red)';
-      document.getElementById('fileStatus').textContent = '⚠ Карточки не найдены. Проверь формат (вопрос TAB ответ).';
-    }
-  };
-  reader.readAsText(file, 'utf-8');
+  const name = file.name.toLowerCase();
+  const deckName = file.name.replace(/\.[^.]+$/, '');
+
+  if (name.endsWith('.zip') || name.endsWith('.colpkg') || name.endsWith('.apkg')) {
+    document.getElementById('fileStatus').style.color = 'var(--muted)';
+    document.getElementById('fileStatus').textContent = '⏳ Читаю архив...';
+    parseZipAnki(file, deckName);
+  } else {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const cards = parsePlainText(ev.target.result);
+      setImportResult(cards, deckName);
+    };
+    reader.readAsText(file, 'utf-8');
+  }
 }
 
-function parseAnki(text) {
+function setImportResult(cards, deckName) {
+  if (cards.length) {
+    pendingImport = { id: 'import_' + Date.now(), name: deckName, color: '#a78bfa', cards };
+    document.getElementById('fileStatus').style.color = 'var(--green)';
+    document.getElementById('fileStatus').textContent = `✓ Найдено ${cards.length} карточек`;
+  } else {
+    document.getElementById('fileStatus').style.color = 'var(--red)';
+    document.getElementById('fileStatus').textContent = '⚠ Карточки не найдены. Проверь формат.';
+  }
+}
+
+async function parseZipAnki(file, deckName) {
+  try {
+    const JSZip = await loadJSZip();
+    const zip = await JSZip.loadAsync(file);
+    let cards = [];
+
+    // Try collection.xml (colpkg format)
+    const xmlFile = zip.file('collection.xml') || zip.file(/\.xml$/i)[0];
+    if (xmlFile) {
+      const xmlText = await xmlFile.async('string');
+      cards = parseXmlAnki(xmlText);
+    }
+
+    // Try notes files (plain text inside zip)
+    if (!cards.length) {
+      const txtFiles = zip.file(/\.(txt|tsv|csv)$/i);
+      for (const f of txtFiles) {
+        const t = await f.async('string');
+        cards = parsePlainText(t);
+        if (cards.length) break;
+      }
+    }
+
+    setImportResult(cards, deckName);
+  } catch(err) {
+    document.getElementById('fileStatus').style.color = 'var(--red)';
+    document.getElementById('fileStatus').textContent = '⚠ Не удалось прочитать архив: ' + err.message;
+  }
+}
+
+function loadJSZip() {
+  return new Promise((resolve, reject) => {
+    if (window.JSZip) { resolve(window.JSZip); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => resolve(window.JSZip);
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function parseXmlAnki(xmlText) {
+  const cards = [];
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, 'text/xml');
+
+    // Anki XML: <note><field>Q</field><field>A</field></note>
+    const notes = doc.querySelectorAll('note');
+    notes.forEach((note, i) => {
+      const fields = note.querySelectorAll('field');
+      if (fields.length >= 2) {
+        const q = stripHtml(fields[0].textContent.trim());
+        const a = stripHtml(fields[1].textContent.trim());
+        if (q && a) cards.push({ id: i+1, q, a, type: 'Imported', hint: '' });
+      }
+    });
+
+    // Alternative: <card front="..." back="..."/>
+    if (!cards.length) {
+      doc.querySelectorAll('card').forEach((c, i) => {
+        const q = stripHtml(c.getAttribute('front') || c.querySelector('front')?.textContent || '');
+        const a = stripHtml(c.getAttribute('back')  || c.querySelector('back')?.textContent  || '');
+        if (q && a) cards.push({ id: i+1, q, a, type: 'Imported', hint: '' });
+      });
+    }
+  } catch(e) {}
+  return cards;
+}
+
+function stripHtml(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  return d.textContent || d.innerText || '';
+}
+
+function parsePlainText(text) {
   return text.split('\n')
     .filter(l => l.trim() && !l.startsWith('#'))
     .map((l, i) => {
       const parts = l.split(/\t|;/);
       if (parts.length >= 2) {
-        return { id: i + 1, q: parts[0].trim(), a: parts[1].trim(), type: 'Imported', hint: '' };
+        return { id: i+1, q: parts[0].trim(), a: parts[1].trim(), type: 'Imported', hint: '' };
       }
       return null;
     })
