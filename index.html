@@ -1164,23 +1164,34 @@ function parseXmlAnki(xmlText) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlText, 'text/xml');
 
-    // Anki XML: <note><field>Q</field><field>A</field></note>
-    const notes = doc.querySelectorAll('note');
-    notes.forEach((note, i) => {
-      const fields = note.querySelectorAll('field');
-      if (fields.length >= 2) {
-        const q = stripHtml(fields[0].textContent.trim());
-        const a = stripHtml(fields[1].textContent.trim());
-        if (q && a) cards.push({ id: i+1, q, a, type: 'Imported', hint: '' });
+    // Format: <card><rich-text name='Front'>Q</rich-text><rich-text name='Back'>A</rich-text></card>
+    const cardNodes = doc.querySelectorAll('card');
+    cardNodes.forEach((card, i) => {
+      let q = '', a = '';
+      card.querySelectorAll('rich-text').forEach(rt => {
+        const name = (rt.getAttribute('name') || '').toLowerCase();
+        if (name === 'front') q = stripHtml(rt.textContent.trim());
+        if (name === 'back')  a = stripHtml(rt.textContent.trim());
+      });
+      if (!q && !a) {
+        const fields = card.querySelectorAll('field, rich-text');
+        if (fields.length >= 2) {
+          q = stripHtml(fields[0].textContent.trim());
+          a = stripHtml(fields[1].textContent.trim());
+        }
       }
+      if (q && a) cards.push({ id: i+1, q, a, type: 'Imported', hint: '' });
     });
 
-    // Alternative: <card front="..." back="..."/>
+    // Format: <note><field>Q</field><field>A</field></note>
     if (!cards.length) {
-      doc.querySelectorAll('card').forEach((c, i) => {
-        const q = stripHtml(c.getAttribute('front') || c.querySelector('front')?.textContent || '');
-        const a = stripHtml(c.getAttribute('back')  || c.querySelector('back')?.textContent  || '');
-        if (q && a) cards.push({ id: i+1, q, a, type: 'Imported', hint: '' });
+      doc.querySelectorAll('note').forEach((note, i) => {
+        const fields = note.querySelectorAll('field');
+        if (fields.length >= 2) {
+          const q = stripHtml(fields[0].textContent.trim());
+          const a = stripHtml(fields[1].textContent.trim());
+          if (q && a) cards.push({ id: i+1, q, a, type: 'Imported', hint: '' });
+        }
       });
     }
   } catch(e) {}
