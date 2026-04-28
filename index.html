@@ -855,76 +855,18 @@ body::before {
 // ═══════════════════════════════════════════════
 const BUILTIN_DECKS = [
   {
-    id: 'sort', name: 'Сортировки', color: '#7c6dff',
+    id: 'demo', name: '👋 Добро пожаловать', color: '#7c6dff',
     cards: [
-      { id:1, q:'Временная сложность Quicksort в среднем?', hint:'Divide & Conquer', type:'Сложность',
-        a:'O(n log n) — массив делится пополам на каждом уровне рекурсии. В худшем (уже отсортированный) — O(n²).' },
-      { id:2, q:'Чем Merge Sort лучше Quick Sort для связных списков?', hint:'Memory access pattern', type:'Сравнение',
-        a:'Merge Sort не требует random access — идеально для LinkedList. QuickSort требует индексации по позиции.' },
-      { id:3, q:'Когда использовать Counting Sort?', hint:'Non-comparison sort', type:'Алгоритм',
-        a:'Когда диапазон значений k небольшой. Работает за O(n+k). Пример: сортировка оценок (1–100), ASCII-символов.' },
-      { id:4, q:'Что такое инвариант цикла в Insertion Sort?', hint:'Loop invariant', type:'Теория',
-        a:'После i-й итерации первые i элементов массива отсортированы. Это гарантирует корректность алгоритма.' },
-      { id:5, q:'Heap Sort — стабильный алгоритм?', hint:'Relative order', type:'Свойство',
-        a:'Нестабильный. Операции heapify могут нарушить относительный порядок равных элементов.' },
-      { id:6, q:'В чём разница между stable и unstable sort?', hint:'Equal elements', type:'Теория',
-        a:'Стабильная сортировка сохраняет исходный порядок равных элементов. Merge Sort — стабильная, Quick/Heap — обычно нет.' },
-      { id:7, q:'Что такое Timsort и где он используется?', hint:'Python, Java', type:'Алгоритм',
-        a:'Гибрид Merge Sort и Insertion Sort. Используется в Python (sort/sorted) и Java (Arrays.sort). O(n log n) worst case.' },
-    ]
-  },
-  {
-    id: 'graph', name: 'Графы', color: '#ff6b9d',
-    cards: [
-      { id:1, q:'BFS vs DFS: разница в использовании памяти?', hint:'Queue vs Stack', type:'Сравнение',
-        a:'BFS хранит весь "фронт" — O(width). DFS хранит путь — O(depth). На широких графах DFS экономнее.' },
-      { id:2, q:'Когда алгоритм Дейкстры не работает?', hint:'Edge weights', type:'Edge case',
-        a:'При отрицательных рёбрах. Используй алгоритм Беллмана-Форда O(VE) или SPFA.' },
-      { id:3, q:'Что такое топологическая сортировка?', hint:'DAG only', type:'Алгоритм',
-        a:'Линейный порядок вершин DAG где для u→v, u стоит раньше v. Используется в build systems, dependency resolution.' },
-      { id:4, q:'Чем DFS полезен для поиска циклов?', hint:'Back edge', type:'Применение',
-        a:'В процессе DFS "back edge" (ребро к уже посещённой серой вершине) указывает на цикл в ориентированном графе.' },
-      { id:5, q:'Алгоритм Флойда-Уоршелла — зачем и когда?', hint:'All-pairs shortest path', type:'Алгоритм',
-        a:'Нахождение кратчайших путей между всеми парами вершин за O(V³). Работает с отрицательными рёбрами (но не с отрицательными циклами).' },
-    ]
-  },
-  {
-    id: 'dp', name: 'Динамическое программирование', color: '#3dd68c',
-    cards: [
-      { id:1, q:'Что такое оптимальная подструктура?', hint:'DP foundation', type:'Теория',
-        a:'Задача имеет оптимальную подструктуру если оптимальное решение задачи содержит оптимальные решения подзадач.' },
-      { id:2, q:'Top-down vs Bottom-up DP: когда что выбирать?', hint:'Memoization vs Tabulation', type:'Сравнение',
-        a:'Top-down (мемоизация) — проще, считает только нужное. Bottom-up — без overhead рекурсии, лучше cache locality, иногда возможна оптимизация памяти.' },
-      { id:3, q:'Как распознать задачу на DP?', hint:'Overlapping subproblems', type:'Теория',
-        a:'Признаки: "минимум/максимум/количество способов", решение зависит от предыдущих подзадач, перекрывающиеся подзадачи (без DP одни и те же вычисляются многократно).' },
-      { id:4, q:'Что такое Interval DP?', hint:'2D table, dp[i][j]', type:'Техника',
-        a:'dp[i][j] = оптимальный ответ для подмассива [i..j]. Перебирай длины от малых к большим. Примеры: Matrix Chain Multiplication, Burst Balloons.' },
-      { id:5, q:'LCS — что это и как решать?', hint:'Longest Common Subsequence', type:'Классика',
-        a:'Наидлиннейшая общая подпоследовательность. dp[i][j] = LCS для s1[0..i] и s2[0..j]. O(nm) время и память.' },
-    ]
-  },
-  {
-    id: 'trees', name: 'Деревья', color: '#ffb547',
-    cards: [
-      { id:1, q:'Что такое AVL дерево?', hint:'Self-balancing BST', type:'Структура',
-        a:'Самобалансирующееся BST: высоты левого и правого поддеревьев отличаются ≤1. Гарантирует O(log n) для поиска, вставки, удаления.' },
-      { id:2, q:'Как обходить бинарное дерево без рекурсии?', hint:'Explicit stack', type:'Алгоритм',
-        a:'Используй явный стек. Для inorder: иди влево добавляя в стек, при null — pop, обработай узел, иди вправо. Аналогично для pre/postorder.' },
-      { id:3, q:'В чём разница между B-tree и BST?', hint:'Disk I/O', type:'Сравнение',
-        a:'B-tree — многоуровневое дерево с большим ветвлением (сотни детей на узел). Оптимизировано для дисковых операций. Используется в БД и файловых системах.' },
-      { id:4, q:'Что такое Trie и когда его применять?', hint:'Prefix tree', type:'Структура',
-        a:'Prefix tree для строк. O(m) поиск по длине слова. Применение: автодополнение, проверка орфографии, IP маршрутизация.' },
-    ]
-  },
-  {
-    id: 'search', name: 'Поиск', color: '#60c6ff',
-    cards: [
-      { id:1, q:'Временная сложность двоичного поиска?', hint:'Sorted array required', type:'Сложность',
-        a:'O(log n) время, O(1) память. Требует отсортированного массива. На каждом шаге пространство поиска делится пополам.' },
-      { id:2, q:'Что такое поиск по ответу (binary search on answer)?', hint:'Монотонная функция', type:'Техника',
-        a:'Бинарный поиск по возможным значениям ответа, а не по индексам. Применимо когда "возможно ли достичь X?" является монотонной функцией.' },
-      { id:3, q:'Как найти медиану двух отсортированных массивов за O(log n)?', hint:'Binary search on partition', type:'Сложная задача',
-        a:'Бинарный поиск по разделу меньшего массива. На каждом шаге проверяем правильность раздела — левая часть ≤ правая. LeetCode #4.' },
+      { id:1, q:'Как импортировать свою колоду?', hint:'Кнопка + Импорт', type:'Инструкция',
+        a:'Нажми «+ Импорт» на главном экране. Поддерживаются файлы Anki (.zip, .colpkg), а также .csv и .txt формат — вопрос и ответ разделены табуляцией или запятой.' },
+      { id:2, q:'Что такое режим SRS?', hint:'Обучающий алгоритм', type:'Инструкция',
+        a:'SRS (Spaced Repetition System) — умный алгоритм повторения. Карточки которые ты знаешь хорошо показываются реже, сложные — чаще. Так запоминание происходит быстрее.' },
+      { id:3, q:'Как выбрать только сложные карточки для повторения?', hint:'Фильтр по сложности', type:'Инструкция',
+        a:'После прохождения колоды нажми «Повторить сложные» — запустится сессия только с карточками которые ты отметил «Снова» или «Сложно». Или задай фильтр вручную перед стартом.' },
+      { id:4, q:'Как работает выбор количества карточек?', hint:'10 / 25 / 50 / Все', type:'Инструкция',
+        a:'Перед началом сессии выбери сколько карточек хочешь пройти за раз. Удобно когда колода большая — можно учить по 10-25 карточек в день.' },
+      { id:5, q:'Как удалить эту демо-колоду?', hint:'Кнопка × на карточке', type:'Инструкция',
+        a:'На главном экране нажми × в правом верхнем углу карточки колоды и подтверди удаление. Встроенные колоды можно удалять так же.' },
     ]
   }
 ];
@@ -934,9 +876,11 @@ const BUILTIN_DECKS = [
 // ═══════════════════════════════════════════════
 function getDecks() {
   try {
+    const deleted = JSON.parse(localStorage.getItem('sa_deleted') || '[]');
     const stored = localStorage.getItem('sa_extra_decks');
     const extra = stored ? JSON.parse(stored) : [];
-    return [...BUILTIN_DECKS, ...extra];
+    const builtins = BUILTIN_DECKS.filter(d => !deleted.includes(d.id));
+    return [...builtins, ...extra];
   } catch(e) { return BUILTIN_DECKS; }
 }
 function saveExtraDeck(deck) {
@@ -1031,15 +975,13 @@ function getIntervalLabel(deckId, cardId) {
 // ═══════════════════════════════════════════════
 function renderHome() {
   const decks = getDecks();
-  const builtinIds = BUILTIN_DECKS.map(d => d.id);
   const list = document.getElementById('deckList');
   list.innerHTML = decks.map((d, i) => {
     const done = getProgress(d.id);
     const pct = Math.round((done / d.cards.length) * 100);
     const due = d.cards.length - done;
-    const isBuiltin = builtinIds.includes(d.id);
     return `<div class="deck-card" style="--deck-color:${d.color}" onclick="openPicker(${i})">
-      ${!isBuiltin ? `<button class="deck-del" onclick="event.stopPropagation();deleteDeck('${d.id}')" title="Удалить">×</button>` : ''}
+      <button class="deck-del" onclick="event.stopPropagation();deleteDeck('${d.id}')" title="Удалить">×</button>
       <div class="deck-name">${d.name}</div>
       <div class="deck-meta">
         <span>📇 ${d.cards.length}</span>
@@ -1053,9 +995,14 @@ function renderHome() {
 function deleteDeck(id) {
   if (!confirm('Удалить колоду?')) return;
   try {
+    // Remove from extra decks
     const stored = localStorage.getItem('sa_extra_decks');
     const extra = stored ? JSON.parse(stored) : [];
     localStorage.setItem('sa_extra_decks', JSON.stringify(extra.filter(d => d.id !== id)));
+    // Track deleted builtins
+    const deleted = JSON.parse(localStorage.getItem('sa_deleted') || '[]');
+    if (!deleted.includes(id)) deleted.push(id);
+    localStorage.setItem('sa_deleted', JSON.stringify(deleted));
     localStorage.removeItem('sa_srs_' + id);
     localStorage.removeItem('sa_prog_' + id);
   } catch(e) {}
