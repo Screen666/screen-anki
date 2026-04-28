@@ -44,6 +44,52 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+
+/* ─── COUNT PICKER ─── */
+.count-row {
+  display: flex; gap: 8px; margin-top: 16px;
+}
+.count-btn {
+  flex: 1; padding: 10px 4px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg2);
+  color: var(--text); font-family: 'Space Mono', monospace;
+  font-size: 12px; font-weight: 700; cursor: pointer; text-align: center;
+  transition: border-color .15s, background .15s;
+}
+.count-btn.selected { border-color: var(--accent); background: rgba(124,109,255,.12); color: var(--accent); }
+
+/* ─── FILTER SECTION ─── */
+.filter-section { margin-top: 16px; }
+.filter-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 7px 12px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--bg2);
+  color: var(--muted); font-family: 'Space Mono', monospace;
+  font-size: 11px; cursor: pointer; transition: .15s;
+}
+.filter-btn.active-again  { border-color: var(--red);    color: var(--red);    background: rgba(255,82,82,.1); }
+.filter-btn.active-hard   { border-color: var(--amber);  color: var(--amber);  background: rgba(255,181,71,.1); }
+.filter-btn.active-good   { border-color: var(--accent); color: var(--accent); background: rgba(124,109,255,.1); }
+.filter-btn.active-easy   { border-color: var(--green);  color: var(--green);  background: rgba(61,214,140,.1); }
+
+/* ─── DONE SCREEN ENHANCED ─── */
+.done-bar { width: 100%; max-width: 320px; margin-bottom: 20px; }
+.done-bar-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; display: flex; gap: 2px; margin-bottom: 6px; }
+.done-bar-seg { height: 100%; border-radius: 2px; transition: width .6s; }
+.done-bar-legend { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; font-size: 10px; color: var(--muted); }
+.done-bar-legend span { display: flex; align-items: center; gap: 4px; }
+.done-bar-legend i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.repeat-hard-btn {
+  width: 100%; max-width: 320px; padding: 14px;
+  background: rgba(255,82,82,.12); border: 1px solid rgba(255,82,82,.4);
+  color: var(--red); border-radius: 12px;
+  font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 500;
+  cursor: pointer; margin-bottom: 10px; transition: .15s;
+}
+.repeat-hard-btn:active { background: rgba(255,82,82,.2); }
+.repeat-hard-btn:disabled { opacity: .3; cursor: default; }
+
 /* ─── NOISE TEXTURE ─── */
 body::before {
   content: '';
@@ -699,6 +745,27 @@ body::before {
       </div>
 
     </div>
+    <div class="filter-section">
+      <div class="filter-title">Фильтр по сложности</div>
+      <div class="filter-row">
+        <button class="filter-btn" id="f-all" onclick="selectFilter('all')">Все</button>
+        <button class="filter-btn" id="f-again" onclick="selectFilter('again')">🔴 Снова</button>
+        <button class="filter-btn" id="f-hard" onclick="selectFilter('hard')">🟡 Сложно</button>
+        <button class="filter-btn" id="f-good" onclick="selectFilter('good')">🔵 Хорошо</button>
+        <button class="filter-btn" id="f-easy" onclick="selectFilter('easy')">🟢 Легко</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-title">Количество карточек</div>
+      <div class="count-row">
+        <button class="count-btn selected" id="c-10" onclick="selectCount(10)">10</button>
+        <button class="count-btn" id="c-25" onclick="selectCount(25)">25</button>
+        <button class="count-btn" id="c-50" onclick="selectCount(50)">50</button>
+        <button class="count-btn" id="c-0" onclick="selectCount(0)">Все</button>
+      </div>
+    </div>
+
     <button class="start-btn" onclick="startStudy()">Начать →</button>
   </div>
 </div>
@@ -722,24 +789,34 @@ body::before {
   <div class="done-glyph">✦</div>
   <div class="done-title">Сессия завершена</div>
   <div class="done-sub" id="doneMsg">Отлично! Возвращайся завтра для повторения.</div>
-  <div class="stats-grid">
-    <div class="stat-box">
-      <div class="stat-n" id="st-again" style="color:var(--red)">0</div>
-      <div class="stat-l">Снова</div>
+
+  <div class="done-bar">
+    <div class="done-bar-track">
+      <div class="done-bar-seg" id="bar-again" style="background:var(--red)"></div>
+      <div class="done-bar-seg" id="bar-hard"  style="background:var(--amber)"></div>
+      <div class="done-bar-seg" id="bar-good"  style="background:var(--accent)"></div>
+      <div class="done-bar-seg" id="bar-easy"  style="background:var(--green)"></div>
     </div>
-    <div class="stat-box">
-      <div class="stat-n" id="st-hard" style="color:var(--amber)">0</div>
-      <div class="stat-l">Сложно</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-n" id="st-good" style="color:var(--accent)">0</div>
-      <div class="stat-l">Хорошо</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-n" id="st-easy" style="color:var(--green)">0</div>
-      <div class="stat-l">Легко</div>
+    <div class="done-bar-legend">
+      <span><i style="background:var(--red)"></i><span id="st-again">0</span> снова</span>
+      <span><i style="background:var(--amber)"></i><span id="st-hard">0</span> сложно</span>
+      <span><i style="background:var(--accent)"></i><span id="st-good">0</span> хорошо</span>
+      <span><i style="background:var(--green)"></i><span id="st-easy">0</span> легко</span>
     </div>
   </div>
+
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-n" id="done-total" style="color:var(--text)">0</div>
+      <div class="stat-l">Всего</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-n" id="done-pct" style="color:var(--green)">0%</div>
+      <div class="stat-l">Хорошо+Легко</div>
+    </div>
+  </div>
+
+  <button class="repeat-hard-btn" id="repeatHardBtn" onclick="repeatHard()">🔴 Повторить сложные</button>
   <button class="done-home-btn" onclick="show('home'); renderHome()">← На главную</button>
 </div>
 
@@ -893,6 +970,8 @@ let ST = {
 
 let selectedDeckIdx = 0;
 let selectedMode = 'seq';
+let selectedCount = 10;
+let selectedFilter = 'all';
 let pendingImport = null;
 
 // ═══════════════════════════════════════════════
@@ -934,6 +1013,7 @@ function updateSRS(deckId, cardId, rating) {
   else if (rating === 'good')  { c.interval = Math.max(1, (c.interval || 1) * c.ease); }
   else if (rating === 'easy')  { c.interval = Math.max(4, (c.interval || 4) * c.ease * 1.3); c.ease += 0.15; }
   c.due = Date.now() + c.interval * 86400000;
+  c.lastRating = rating;
   saveSRS(deckId, srs);
 }
 
@@ -988,12 +1068,39 @@ function deleteDeck(id) {
 function openPicker(i) {
   selectedDeckIdx = i;
   selectedMode = 'seq';
+  selectedCount = 10;
+  selectedFilter = 'all';
   const decks = getDecks();
   document.getElementById('pickerName').textContent = decks[i].name;
-  ['seq','rnd','srs'].forEach(m => {
-    document.getElementById('m-' + m).classList.toggle('selected', m === 'seq');
+  ['seq','rnd','srs'].forEach(m => document.getElementById('m-'+m).classList.toggle('selected', m==='seq'));
+  ['10','25','50','0'].forEach(n => document.getElementById('c-'+n).classList.toggle('selected', n==='10'));
+  ['all','again','hard','good','easy'].forEach(f => {
+    const el = document.getElementById('f-'+f);
+    el.className = 'filter-btn' + (f==='all' ? ' active-all' : '');
   });
+  document.getElementById('f-all').style.borderColor = 'var(--accent)';
+  document.getElementById('f-all').style.color = 'var(--accent)';
   show('modePicker');
+}
+
+function selectCount(n) {
+  selectedCount = n;
+  ['10','25','50','0'].forEach(x => document.getElementById('c-'+x).classList.toggle('selected', x===String(n)));
+}
+
+function selectFilter(f) {
+  selectedFilter = f;
+  const clsMap = {again:'active-again', hard:'active-hard', good:'active-good', easy:'active-easy'};
+  ['all','again','hard','good','easy'].forEach(x => {
+    const el = document.getElementById('f-'+x);
+    el.className = 'filter-btn';
+    el.style.borderColor = '';
+    el.style.color = '';
+    if (x === f) {
+      if (f === 'all') { el.style.borderColor='var(--accent)'; el.style.color='var(--accent)'; }
+      else el.classList.add(clsMap[f]);
+    }
+  });
 }
 
 function selectMode(m) {
@@ -1010,9 +1117,27 @@ function startStudy() {
   const decks = getDecks();
   ST.deck = decks[selectedDeckIdx];
   ST.mode = selectedMode;
-  ST.queue = buildQueue(ST.deck, selectedMode);
   ST.idx = 0;
   ST.session = { again:0, hard:0, good:0, easy:0 };
+
+  let queue = buildQueue(ST.deck, selectedMode);
+
+  // Apply filter by difficulty
+  if (selectedFilter !== 'all') {
+    const srs = getSRS(ST.deck.id);
+    const filtered = queue.filter(c => {
+      const r = srs[c.id]?.lastRating;
+      return r === selectedFilter;
+    });
+    queue = filtered.length ? filtered : queue; // fallback to all if none match
+  }
+
+  // Apply count limit
+  if (selectedCount > 0 && queue.length > selectedCount) {
+    queue = queue.slice(0, selectedCount);
+  }
+
+  ST.queue = queue;
 
   const labels = { seq:'порядок', rnd:'рандом', srs:'SRS' };
   const cls    = { seq:'badge-seq', rnd:'badge-rnd', srs:'badge-srs' };
@@ -1079,7 +1204,13 @@ function revealAnswer() {
 
 function rate(r) {
   ST.session[r] = (ST.session[r] || 0) + 1;
-  if (ST.mode === 'srs') updateSRS(ST.deck.id, ST.queue[ST.idx].id, r);
+  // Save lastRating for filter even in non-SRS mode
+  const srs = getSRS(ST.deck.id);
+  const cid = ST.queue[ST.idx].id;
+  if (!srs[cid]) srs[cid] = { interval:0, ease:2.5, due:Date.now() };
+  srs[cid].lastRating = r;
+  saveSRS(ST.deck.id, srs);
+  if (ST.mode === 'srs') updateSRS(ST.deck.id, cid, r);
   if (r === 'again' && ST.mode !== 'seq') {
     const missed = { ...ST.queue[ST.idx] };
     const insertAt = Math.min(ST.idx + 3, ST.queue.length);
@@ -1095,15 +1226,51 @@ function rate(r) {
 // ═══════════════════════════════════════════════
 function endSession() {
   const s = ST.session;
+  const total = Object.values(s).reduce((a,b) => a+b, 0);
+  const good = (s.good||0) + (s.easy||0);
+  const pct = total ? Math.round(good/total*100) : 0;
+
   document.getElementById('st-again').textContent = s.again || 0;
   document.getElementById('st-hard').textContent  = s.hard  || 0;
   document.getElementById('st-good').textContent  = s.good  || 0;
   document.getElementById('st-easy').textContent  = s.easy  || 0;
-  const total = Object.values(s).reduce((a,b) => a+b, 0);
+  document.getElementById('done-total').textContent = total;
+  document.getElementById('done-pct').textContent = pct + '%';
+
+  // Progress bar segments
+  const segs = ['again','hard','good','easy'];
+  segs.forEach(k => {
+    const w = total ? Math.round((s[k]||0)/total*100) : 0;
+    document.getElementById('bar-'+k).style.width = w + '%';
+  });
+
   const modeLabel = { seq:'по порядку', rnd:'случайный', srs:'SRS' }[ST.mode];
-  document.getElementById('doneMsg').textContent =
-    `${total} карточек · режим «${modeLabel}»`;
+  document.getElementById('doneMsg').textContent = `${total} карточек · «${modeLabel}»`;
+
+  // Repeat hard button — enabled if there are again/hard cards
+  const hardCount = (s.again||0) + (s.hard||0);
+  const btn = document.getElementById('repeatHardBtn');
+  btn.textContent = hardCount > 0 ? `🔴 Повторить сложные (${hardCount})` : '🔴 Сложных нет';
+  btn.disabled = hardCount === 0;
+
   show('done');
+}
+
+function repeatHard() {
+  // Start new session with only again+hard cards filtered
+  selectedFilter = 'again'; // will show again+hard
+  // Actually collect cards rated again or hard from last session
+  const srs = getSRS(ST.deck.id);
+  const hardCards = ST.deck.cards.filter(c => {
+    const r = srs[c.id]?.lastRating;
+    return r === 'again' || r === 'hard';
+  });
+  if (!hardCards.length) return;
+  ST.idx = 0;
+  ST.session = { again:0, hard:0, good:0, easy:0 };
+  ST.queue = hardCards;
+  show('study');
+  renderCard();
 }
 
 // ═══════════════════════════════════════════════
@@ -1236,16 +1403,27 @@ function stripHtml(html) {
 }
 
 function parsePlainText(text) {
-  return text.split('\n')
-    .filter(l => l.trim() && !l.startsWith('#'))
-    .map((l, i) => {
-      const parts = l.split(/\t|;/);
-      if (parts.length >= 2) {
-        return { id: i+1, q: parts[0].trim(), a: parts[1].trim(), type: 'Imported', hint: '' };
-      }
-      return null;
-    })
-    .filter(Boolean);
+  // Remove BOM
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+  const cards = [];
+  lines.forEach((line, i) => {
+    // Try quoted CSV: "question","answer"
+    const quotedMatch = line.match(/^"((?:[^"]|"")*)",\s*"((?:[^"]|"")*)"/);
+    if (quotedMatch) {
+      const q = quotedMatch[1].replace(/""/g, '"').trim();
+      const a = quotedMatch[2].replace(/""/g, '"').trim();
+      if (q && a) { cards.push({ id: i+1, q, a, type: 'Imported', hint: '' }); return; }
+    }
+    // Try tab or semicolon separated
+    const parts = line.split(/\t|;/);
+    if (parts.length >= 2) {
+      const q = parts[0].replace(/^"|"$/g,'').trim();
+      const a = parts[1].replace(/^"|"$/g,'').trim();
+      if (q && a) cards.push({ id: i+1, q, a, type: 'Imported', hint: '' });
+    }
+  });
+  return cards;
 }
 
 function confirmImport() {
